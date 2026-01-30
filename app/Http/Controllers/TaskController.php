@@ -7,143 +7,129 @@ use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
-    // --- READ (Index) ---
     public function index()
-{
-    $query = auth()->user()->tasks();
+    {
+        $tasks = auth()->user()->tasks()->latest()->get();
 
-    if (request('search')) {
-        $query->where(function($q) {
-            $q->where('title', 'like', '%' . request('search') . '%')
-              ->orWhere('description', 'like', '%' . request('search') . '%');
-        });
+        $stats = [
+            'total' => $tasks->count(),
+            'todo' => $tasks->where('status', 'Todo')->count(),
+            'done' => $tasks->where('status', 'Done')->count(),
+            'overdue' => $tasks->where('deadline', '<', now())->where('status', '!=', 'Done')->count(),
+        ];
+
+        return view('tasks.index', compact('tasks', 'stats'));
     }
 
-    if (request('priority') && request('priority') !== 'All') {
-        $query->where('priority', request('priority'));
+    public function list()
+    {
+        $query = auth()->user()->tasks();
+
+        if (request('search')) {
+            $query->where(function($q) {
+                $q->where('title', 'like', '%' . request('search') . '%')
+                  ->orWhere('description', 'like', '%' . request('search') . '%');
+            });
+        }
+
+        if (request('status') && request('status') !== 'All') {
+            $query->where('status', request('status'));
+        }
+        if (request('priority') && request('priority') !== 'All') {
+            $query->where('priority', request('priority'));
+        }
+
+        if (request('sort') == 'deadline_asc') {
+            $query->orderBy('deadline', 'asc');
+        } elseif (request('sort') == 'deadline_desc') {
+            $query->orderBy('deadline', 'desc');
+        } else {
+            $query->latest();
+        }
+
+        $tasks = $query->paginate(10);
+
+        return view('tasks.list', compact('tasks'));
     }
 
-    if (request('sort') == 'deadline_asc') {
-        $query->orderBy('deadline', 'asc'); 
-    } elseif (request('sort') == 'deadline_desc') {
-        $query->orderBy('deadline', 'desc'); 
-    } else {
-        $query->latest(); 
+    public function updateStatus(Request $request, Task $task)
+    {
+        $task->update(['status' => $request->status]);
+
+        if ($request->isJson()) {
+            $newHtml = view('tasks.partials.task-card', compact('task'))->render();
+
+            return response()->json([
+                'success' => true,
+                'html' => $newHtml 
+            ]);
+        }
+
+        return back();
     }
 
-    $tasks = $query->paginate(9);
-
-    $allTasks = auth()->user()->tasks()->get();
-
-    $stats = [
-        'total' => $allTasks->count(),
-        'todo' => $allTasks->where('status', 'Todo')->count(),
-        'done' => $allTasks->where('status', 'Done')->count(),
-        'overdue' => $allTasks->where('deadline', '<', now())->where('status', '!=', 'Done')->count(),
-    ];
-
-    return view('tasks.index', compact('tasks', 'stats'));
-}
-    // --- CREATE (Formulaire) ---
     public function create()
     {
         return view('tasks.create');
     }
 
-    // --- STORE (Enregistrer) ---
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $request->validate([
             'title' => 'required|max:255',
             'description' => 'nullable',
             'priority' => 'required|in:Low,Medium,High',
             'deadline' => 'nullable|date',
+            'status' => 'required|in:Todo,In Progress,Done',
         ]);
 
-        // Default status is 'Todo'
-        $validated['status'] = 'Todo';
-
-        auth()->user()->tasks()->create($validated);
+        auth()->user()->tasks()->create($request->all());
 
         return redirect()->route('tasks.index')->with('success', 'Task created successfully!');
     }
 
-    // --- EDIT (Formulaire de modification) ---
     public function edit(Task $task)
     {
-        // Security: Ensure user owns the task
-        if ($task->user_id !== auth()->id()) {
-            abort(403);
-        }
         return view('tasks.edit', compact('task'));
     }
 
-    // --- UPDATE (Sauvegarder les modifications) ---
     public function update(Request $request, Task $task)
     {
-        if ($task->user_id !== auth()->id()) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
+        $request->validate([
             'title' => 'required|max:255',
-            'description' => 'nullable',
             'priority' => 'required|in:Low,Medium,High',
-            'status' => 'required|in:Todo,In Progress,Done',
             'deadline' => 'nullable|date',
+            'status' => 'required|in:Todo,In Progress,Done',
         ]);
 
-        $task->update($validated);
+        $task->update($request->all());
 
-        return redirect()->route('tasks.index')->with('success', 'Task updated successfully!');
+        return redirect()->route('tasks.index')->with('success', 'Task updated!');
     }
 
-    // --- SOFT DELETE (Mettre à la corbeille) ---
     public function destroy(Task $task)
     {
-        if ($task->user_id !== auth()->id()) {
-            abort(403);
-        }
-        
-        $task->delete(); // This performs a Soft Delete because of the Trait in Model
-
-        return redirect()->route('tasks.index')->with('success', 'Task moved to trash.');
+        $task->delete(); 
+        return back()->with('success', 'Task moved to trash!');
     }
 
-    // --- TRASH LIST (Voir la corbeille) ---
     public function trash()
     {
-        // Get only tasks that have been soft deleted
         $tasks = auth()->user()->tasks()->onlyTrashed()->get();
         return view('tasks.trash', compact('tasks'));
     }
 
-    // --- RESTORE (Récupérer de la corbeille) ---
     public function restore($id)
     {
-        // Find the task even if it's deleted
-        $task = auth()->user()->tasks()->withTrashed()->findOrFail($id);
-        
+        $task = auth()->user()->tasks()->onlyTrashed()->findOrFail($id);
         $task->restore();
-
-        return redirect()->route('tasks.trash')->with('success', 'Task restored successfully!');
+        return back()->with('success', 'Task restored!');
     }
 
-    // --- HARD DELETE (Supprimer définitivement) ---
     public function forceDelete($id)
     {
-        $task = auth()->user()->tasks()->withTrashed()->findOrFail($id);
-        
-        $task->forceDelete(); // Bye bye forever
-
-        return redirect()->route('tasks.trash')->with('success', 'Task deleted permanently.');
+        $task = auth()->user()->tasks()->onlyTrashed()->findOrFail($id);
+        $task->forceDelete();
+        return back()->with('success', 'Task deleted permanently!');
     }
-    public function updateStatus(Request $request, Task $task)
-{
-    $task->update([
-        'status' => $request->status
-    ]);
-
-    return back(); 
-}
 }
