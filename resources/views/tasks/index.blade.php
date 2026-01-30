@@ -71,37 +71,37 @@
 
     </div>
 
-    <form method="GET" action="{{ route('tasks.index') }}" class="flex flex-col md:flex-row gap-4 mb-8">
-        
-        <div class="relative flex-1">
-            <svg class="absolute left-4 top-3.5 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            <input type="text" name="search" value="{{ request('search') }}" 
-                   placeholder="Search tasks..." 
-                   class="w-full pl-12 pr-4 py-3 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition placeholder-slate-400">
-        </div>
-
-        <div class="flex gap-2">
-            <select name="priority" onchange="this.form.submit()" class="px-5 py-3 bg-white text-slate-600 font-bold rounded-2xl ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition outline-none cursor-pointer">
-                <option value="All">⚡ All Priorities</option>
-                <option value="Low" {{ request('priority') == 'Low' ? 'selected' : '' }}>🟢 Low</option>
-                <option value="Medium" {{ request('priority') == 'Medium' ? 'selected' : '' }}>🟠 Medium</option>
-                <option value="High" {{ request('priority') == 'High' ? 'selected' : '' }}>🔴 High</option>
-            </select>
-
-            <select name="sort" onchange="this.form.submit()" class="px-5 py-3 bg-white text-slate-600 font-bold rounded-2xl ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition outline-none cursor-pointer">
-                <option value="latest">🕒 Newest</option>
-                <option value="deadline_asc" {{ request('sort') == 'deadline_asc' ? 'selected' : '' }}>⬆️ Date (Close)</option>
-                <option value="deadline_desc" {{ request('sort') == 'deadline_desc' ? 'selected' : '' }}>⬇️ Date (Far)</option>
-            </select>
+        <form method="GET" action="{{ route('tasks.index') }}" class="flex flex-col md:flex-row gap-4 mb-8">
             
-            @if(request('search') || (request('priority') && request('priority') !== 'All') || (request('sort') && request('sort') !== 'latest'))
-                <a href="{{ route('tasks.index') }}" class="px-5 py-3 bg-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-300 transition flex items-center">
-                    ✕
-                </a>
-            @endif
-        </div>
-        
-    </form>
+            <div class="relative flex-1">
+                <svg class="absolute left-4 top-3.5 w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                <input type="text" name="search" value="{{ request('search') }}" 
+                    placeholder="Search tasks..." 
+                    class="w-full pl-12 pr-4 py-3 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-2 focus:ring-indigo-500 bg-white shadow-sm transition placeholder-slate-400">
+            </div>
+
+            <div class="flex gap-2">
+                <select name="priority" onchange="this.form.submit()" class="px-5 py-3 bg-white text-slate-600 font-bold rounded-2xl ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition outline-none cursor-pointer">
+                    <option value="All">⚡ All Priorities</option>
+                    <option value="Low" {{ request('priority') == 'Low' ? 'selected' : '' }}>🟢 Low</option>
+                    <option value="Medium" {{ request('priority') == 'Medium' ? 'selected' : '' }}>🟠 Medium</option>
+                    <option value="High" {{ request('priority') == 'High' ? 'selected' : '' }}>🔴 High</option>
+                </select>
+
+                <select name="sort" onchange="this.form.submit()" class="px-5 py-3 bg-white text-slate-600 font-bold rounded-2xl ring-1 ring-slate-200 shadow-sm hover:bg-slate-50 transition outline-none cursor-pointer">
+                    <option value="latest">🕒 Newest</option>
+                    <option value="deadline_asc" {{ request('sort') == 'deadline_asc' ? 'selected' : '' }}>⬆️ Date (Close)</option>
+                    <option value="deadline_desc" {{ request('sort') == 'deadline_desc' ? 'selected' : '' }}>⬇️ Date (Far)</option>
+                </select>
+                
+                @if(request('search') || (request('priority') && request('priority') !== 'All') || (request('sort') && request('sort') !== 'latest'))
+                    <a href="{{ route('tasks.index') }}" class="px-5 py-3 bg-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-300 transition flex items-center">
+                        ✕
+                    </a>
+                @endif
+            </div>
+            
+        </form>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 align-start">
 
